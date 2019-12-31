@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/gfg-rwgl/gfg-rwgl.iml" filepath="$PROJECT_DIR$/gfg-rwgl/gfg-rwgl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gfg-xml/gfg-xml.iml" filepath="$PROJECT_DIR$/gfg-xml/gfg-xml.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gfg-xqgl/gfg-xqgl.iml" filepath="$PROJECT_DIR$/gfg-xqgl/gfg-xqgl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gfg-yhgl/gfg-yhgl.iml" filepath="$PROJECT_DIR$/gfg-yhgl/gfg-yhgl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test-gfg.iml" filepath="$PROJECT_DIR$/test-gfg.iml" />
+    </modules>
+  </component>
+</project>

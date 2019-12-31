@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="gfg-rwgl" />
+        <module name="gfg-xml" />
+        <module name="gfg-xqgl" />
+        <module name="gfg-yhgl" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="gfg-rwgl" target="1.8" />
+      <module name="gfg-xml" target="1.8" />
+      <module name="gfg-xqgl" target="1.8" />
+      <module name="gfg-yhgl" target="1.8" />
+      <module name="test-gfg" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

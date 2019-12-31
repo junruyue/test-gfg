@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script>
+        var isSave =false;
+        function save(){
+            //dosomething
+        }
+        window.onbeforeunload =function() {
+
+            /*if(!isSave){
+                return "当前数据还没有保存，关闭或刷新窗口会自动保存数据，是否继续?";
+            }else{
+                return "";
+            }*/
+            event.returnValue = "ceshiguanbi";
+        };
+        window.onunload =function() {
+            if(!isSave){
+                save();
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>test html...</h1>
+</body>
+</html>

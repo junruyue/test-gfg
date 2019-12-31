@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/webjars/AdminLTE/2.3.8/dist/css/AdminLTE.css"/>
+    <link rel="stylesheet" href="/webjars/AdminLTE/2.3.8/dist/css/skins/_all-skins.min.css"/>
+    <link rel="stylesheet" href="/webjars/select2/3.4.8/select2.css"/>
+    <link rel="stylesheet" href="/webjars/select2/3.4.8/select2-bootstrap.css"/>
+    <link rel="stylesheet" href="../js/pagination/pagination.css"/>
+
+
+    <script src="/webjars/jquery/2.2.3/jquery.min.js" type="text/javascript"></script>
+    <script src="/webjars/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="/webjars/select2/3.4.8/select2.min.js" type="text/javascript"></script>
+
+    <!--引入angularJS-->
+    <script src="/webjars/angularjs/1.2.9/angular.min.js" type="text/javascript"></script>
+
+    <!--引入分页插件-->
+    <!--<script src="../js/pagination/pagination.js" type="text/javascript"></script>-->
+    <script src="../js/pagination/tm.pagination.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        var app = angular.module("PAGEPUBG", ["tm.pagination"]);
+
+        app.controller("testUser", function ($scope, $http) {
+
+            //A.添加用户
+            //1.显示角色列表{data: [{id: 1, text: '选项1'}, {id: 2, text: '选项2'}]}
+            $scope.roleList = {data: []};
+            $scope.showRoleList = function () {
+                $http.get("/roles/findAll").success(
+                    function (response) {
+                        if (response.code == 200) {
+                            var dataList = response.data;
+                            for (var i = 0; i < dataList.length; i++) {
+                                var data = dataList[i];
+                                var obj = {};
+                                obj.id = i + 1;
+                                obj.text = data["roleName"];
+                                $scope.roleList.data.push(obj);
+                            }
+                        }
+                    }
+                )
+            };
+
+            //2.构造提交的表单并发送请求(只有一个角色, 选的是一个对象)
+            $scope.convertRole = function (selectJson) {
+
+                var list = [];
+                list.push(selectJson.text);
+                return list;
+            };
+
+            $scope.addUser = function () {
+                $scope.entity.roleList = $scope.convertRole($scope.entity.roleList);
+                $http.post("/users/add", $scope.entity).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            alert("添加用户成功: " + response.data.userName);
+                            $scope.search();
+                        } else {
+                            alert(response.message);
+                        }
+
+                    }
+                );
+            };
+
+            //B查询用户
+            //页码变化也会引起onchange函数触发
+            $scope.paginationConf = {
+                //当前页
+                // currentPage: 1,
+                currentPage: 1,
+                //总个数
+                totalItems: 0,
+                //每页个数
+                itemsPerPage: 5,
+                //分页个数
+                perPageOptions: [5, 10, 15, 20],
+                //出发分页函数
+                onChange: function () {
+
+                    $scope.reloadList();//重新加载  这个方法会重复调用两次(已解决)
+
+                }
+            };
+
+            $scope.reloadList = function () {
+                $scope.findPage($scope.searchEntity, $scope.paginationConf.currentPage,
+                    $scope.paginationConf.itemsPerPage);
+
+            };
+
+
+            $scope.search = function () {
+
+                $scope.paginationConf.currentPage = 1;
+                $scope.reloadList();
+
+            };
+
+            //分页+条件查询
+            $scope.findPage = function (searchEntity, pageNum, pageSize) {
+
+                $http.post("/users/findPage?pageNum=" + pageNum + "&pageSize=" + pageSize, searchEntity).success(
+                    function (response) {
+
+                        if (response.code == 200) {
+                            //更新总记录数
+                            $scope.paginationConf.totalItems = response.data.total;
+
+                            //更新list集合
+                            $scope.list = response.data.list;
+                        } else {
+                            alert(JSON.stringify(response));
+                        }
+
+                    }
+                )
+            };
+
+
+            //C修改用户基本信息
+            $scope.findOne = function (id) {
+                $http.get("/users/findOne?id=" + id).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            $scope.entity = {
+                                "id": null,
+                                "userName": null,
+                                "password": null,
+                                "name": null,
+                                "group": null,
+                                "department": null,
+                                "roleList": {},
+                                "addTime": null,
+                                "updateTime": null,
+                                "lastLoginTime": null,
+                                "status": null
+                            };
+                            $scope.entity.id = response.data.id;
+                            $scope.entity.userName = response.data.userName;
+                            $scope.entity.password = response.data.password;
+                            $scope.entity.name = response.data.name;
+                            $scope.entity.group = response.data.userGroup;
+                            $scope.entity.department = response.data.department;
+                            if (response.data.roleList.length > 0) {
+                                var row = {};
+                                row.id = 1;
+                                row.text = (response.data.roleList)[0].roleName;
+                                $scope.entity.roleList = row;
+                            }
+                            $scope.entity.status = response.data.status;
+                            $scope.entity.addTime = response.data.addTime;
+                            $scope.entity.updateTime = response.data.updateTime;
+                            $scope.entity.lastLoginTime = response.data.lastLoginTime;
+                        }
+
+                    }
+                )
+            };
+
+            $scope.update = function (entity) {
+                var list = [];
+                list.push(entity.roleList.text);
+                entity.roleList = list;
+                $http.post("/users/update", entity).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            alert("修改成功");
+                            $scope.search();
+                        } else {
+                            alert("修改失败: " + response.message);
+                        }
+                    }
+                );
+            };
+
+            //E删除
+            //1.删除多个
+            $scope.selectIds = [];
+
+            //更新复选:将选中的id添加到数组中
+            $scope.updateSelection = function ($event, id) {
+                //根据源$event判断是否选中
+                if ($event.target.checked) {
+                    //将id添加到数组
+                    $scope.selectIds.push(id);
+                } else {
+                    //根据索引删除相同id
+                    //1.获取索引
+                    var index = $scope.selectIds.indexOf(id);
+                    //2.删除该位置的一个元素
+                    $scope.selectIds.splice(index, 1);
+                }
+            };
+
+            //选中全部
+            $scope.selectAll = function ($event) {
+                //1.先清洗集合
+                $scope.selectIds = [];
+                //2.判断是否为选中状态
+                if ($event.target.checked) {
+                    //3.是选中的话,将本页id添加到数组
+                    for (var i = 0; i < ($scope.list).length; i++) {
+                        if ($scope.list[i].status == "未登录") {
+                            var selectId = $scope.list[i].id;
+                            $scope.selectIds.push(selectId);
+                        }
+                    }
+                }
+            };
+
+            $scope.deleteAll = function () {
+                $http.post("/users/deleteAll", $scope.selectIds).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            $scope.search();
+                        }
+                        alert(response.message);
+                    }
+                );
+            };
+
+            //2.删除单个
+            $scope.deleteOne = function (id) {
+                $http.get("/users/deleteOne?id=" + id).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            $scope.search();
+                        }
+                        alert(response.message);
+
+                    }
+                );
+            };
+
+            $scope.removeUser = function (username) {
+                $http.get("/remove?username=" + username).success(
+                    function (response) {
+                        if (response.code == 200) {
+                            $scope.search();
+                        }
+                        alert(response.message);
+
+                    }
+                );
+            }
+        });
+    </script>
+
+
+    <!--引入select2组件-->
+    <script src="../js/select2/angular-select2.js" type="text/javascript"></script>
+</head>
+
+<!--测试用户管理-->
+<body ng-app="PAGEPUBG" ng-controller="testUser" ng-init="showRoleList()">
+<div class="pull-left">
+    <div class="form-group form-inline">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default" title="新建" data-toggle="modal" data-target="#editModal2"
+                    ng-click="entity={}"><i class="fa fa-file-o"></i> 新建
+            </button>
+            <button type="button" class="btn btn-default" title="删除" ng-click="deleteAll()"><i
+                    class="fa fa-trash-o"></i>
+                删除
+            </button>
+            <button type="button" class="btn btn-default" title="刷新" onclick="window.location.reload();"><i
+                    class="fa fa-refresh"></i> 刷新
+            </button>
+        </div>
+    </div>
+</div>
+<div class="box-tools pull-right">
+    {{searchEntity}}
+    <div class="has-feedback">
+        用户名称：<input ng-model="searchEntity.userName">
+        姓名: <input ng-model="searchEntity.name">
+        是否在线:<input type="radio" value="LOGIN" ng-model="searchEntity.status"/>登录 <input type="radio" value="LOGOUT"
+                                                                                         ng-model="searchEntity.status"/>未登录
+        <button class="btn btn-default" ng-click="search()">查询</button>
+    </div>
+</div>
+{{selectIds}}
+<table class="table table-bordered">
+    <tr>
+        <th class="" style="padding-right:0px">
+            <input id="selall" type="checkbox" class="icheckbox_square-blue" ng-model="checkAll"
+                   ng-click="selectAll($event)">
+        </th>
+        <th>序号</th>
+        <th>用户名称</th>
+        <th>姓名</th>
+        <th>部门</th>
+        <th>拥有角色</th>
+        <th>所属群组</th>
+        <th>状态</th>
+        <th>注册时间</th>
+        <th>最近登录时间</th>
+        <th class="text-center">操作</th>
+    </tr>
+    <tr ng-repeat="entity in list">
+        <td><input type="checkbox" ng-show="entity.status!='登录'" ng-checked="checkAll"
+                   ng-click="updateSelection($event , entity.id)"></td>
+        <td>{{$index+1}}</td>
+        <td>{{entity.userName}}</td>
+        <td>{{entity.name}}</td>
+        <td>{{entity.department}}</td>
+        <td>
+            <div ng-repeat="role in entity.roleList">
+                {{role}}
+            </div>
+        </td>
+        <td>{{entity.userGroup}}</td>
+        <td>{{entity.status}}</td>
+        <td>{{entity.addTime}}</td>
+        <td>{{entity.lastLoginTime}}</td>
+        <td>
+            <button type="button" class="btn bg-olive btn-xs" data-toggle="modal" data-target="#editModal3"
+                    ng-if="entity.status!='登录'" ng-click="findOne(entity.id)">修该基本信息
+            </button>
+            <button type="button" class="btn bg-olive btn-xs" data-toggle="modal" data-target="#editModal1"
+                    ng-if="entity.status!='登录'" ng-click="findOne(entity.id)">修改密码
+            </button>
+            <button type="button" ng-if="entity.status!='登录'" class="btn bg-olive btn-xs"
+                    ng-click="deleteOne(entity.id)">删除
+            </button>
+            <button type="button" ng-if="entity.status=='登录'" class="btn bg-olive btn-xs"
+                    ng-click="removeUser(entity.userName)">注销
+            </button>
+        </td>
+    </tr>
+</table>
+<!--<tm-pagination conf="paginationConf"></tm-pagination>-->
+<div class="pull-right">
+    <tm-pagination conf="paginationConf"></tm-pagination>
+</div>
+
+<div class="modal fade" id="editModal1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel0" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="myModalLabel0">修改密码</h3>
+            </div>
+            <form name="updateUserForm" novalidate>
+                <div class="modal-body">
+
+                    <!--<p>用户名:<br>
+                        <input type="text" name="user" ng-model="user" required>
+                        <span style="color:red" ng-show="myForm.user.$dirty && myForm.user.$invalid">
+  <span ng-show="myForm.user.$error.required">用户名是必须的。</span>
+  </span>
+                    </p>
+
+                    <p>邮箱:<br>
+                        <input type="email" name="email" ng-model="email" required>
+                        <span style="color:red" ng-show="myForm.email.$dirty && myForm.email.$invalid">
+  <span ng-show="myForm.email.$error.required">邮箱是必须的。</span>
+  <span ng-show="myForm.email.$error.email">非法的邮箱。</span>
+  </span>
+                    </p>
+
+                    <p>
+                        <input type="submit"
+                               ng-disabled="myForm.user.$dirty && myForm.user.$invalid ||
+  myForm.email.$dirty && myForm.email.$invalid">
+                    </p>-->
+                    <table class="table table-bordered table-striped" width="800px">
+                        {{entity}}
+                        {{roleList}}
+                        <tr>
+                            <td>新密码</td>
+                            <td>
+                                <input id="newPwd" name="newPwd" type="password" class="form-control"
+                                       placeholder="请输入用户密码"
+                                       ng-model="entity.password" ng-minlength="6" ng-maxlength="20" required>
+                                <span style="color: red" ng-show="updateUserForm.newPwd.$invalid">
+                                    <span ng-show="updateUserForm.newPwd.$error.minlength">*密码长度不小于6</span>
+                                    <span ng-show="updateUserForm.newPwd.$error.maxlength">*密码长度不超过20</span>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>确认密码</td>
+                            <td>
+                                <input id="nrepassword" type="password" name="nrepassword" class="form-control"
+                                       placeholder="请再次输入密码"
+                                       ng-model="entity.repassword" ng-minlength="6" ng-maxlength="20" required>
+                                <span ng-show="entity.repassword!=entity.password" style="color: red">
+                                    *两次输入的密码不一致
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button id="updatePwd" class="btn btn-success" data-dismiss="modal" aria-hidden="true"
+                            ng-disabled="updateUserForm.newPwd.$invalid || entity.repassword!=entity.password"
+                            ng-click="update(entity)">
+                        保存
+                    </button>
+                    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editModal2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="myModalLabel">用户编辑</h3>
+            </div>
+            <form name="addUserForm" novalidate>
+                <div class="modal-body">
+
+                    <!--<p>用户名:<br>
+                        <input type="text" name="user" ng-model="user" required>
+                        <span style="color:red" ng-show="myForm.user.$dirty && myForm.user.$invalid">
+  <span ng-show="myForm.user.$error.required">用户名是必须的。</span>
+  </span>
+                    </p>
+
+                    <p>邮箱:<br>
+                        <input type="email" name="email" ng-model="email" required>
+                        <span style="color:red" ng-show="myForm.email.$dirty && myForm.email.$invalid">
+  <span ng-show="myForm.email.$error.required">邮箱是必须的。</span>
+  <span ng-show="myForm.email.$error.email">非法的邮箱。</span>
+  </span>
+                    </p>
+
+                    <p>
+                        <input type="submit"
+                               ng-disabled="myForm.user.$dirty && myForm.user.$invalid ||
+  myForm.email.$dirty && myForm.email.$invalid">
+                    </p>-->
+                    <table class="table table-bordered table-striped" width="800px">
+                        {{entity}}
+                        {{roleList}}
+                        <tr>
+                            <td>用户名称</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入用户名称" ng-model="entity.userName"
+                                       ng-readonly="entity.id!=null">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>密码</td>
+                            <td>
+                                <input id="userPwd" name="userPwd" type="password" class="form-control"
+                                       placeholder="请输入用户密码"
+                                       ng-model="entity.password" ng-minlength="6" ng-maxlength="20" required>
+                                <span style="color: red" ng-show="addUserForm.userPwd.$invalid">
+                                    <span ng-show="addUserForm.userPwd.$error.minlength">*密码长度不小于6</span>
+                                    <span ng-show="addUserForm.userPwd.$error.maxlength">*密码长度不超过20</span>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>确认密码</td>
+                            <td>
+                                <input id="repassword" type="password" name="repassword" class="form-control"
+                                       placeholder="请再次输入密码"
+                                       ng-model="entity.repassword" ng-minlength="6" ng-maxlength="20"
+                                       pwd-check="userPwd" required>
+                                <span ng-show="entity.repassword!=entity.password" style="color: red">
+                                    *两次输入的密码不一致
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>姓名</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入用户姓名" ng-model="entity.name"
+                                       ng-readonly="entity.id!=null">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>部门</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入部门名称"
+                                       ng-model="entity.department">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>所属群组</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入群组名称" ng-model="entity.group">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>选择角色</td>
+                            <td>
+                                <!--ng-readonly="条件", 是否可编辑-->
+                                <input select2 select2-model="entity.roleList" config="roleList"
+                                       class="form-control" placeholder="请选择角色" type="text"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button id="addUser" class="btn btn-success" data-dismiss="modal" aria-hidden="true"
+                            ng-disabled="addUserForm.userPwd.$invalid || entity.repassword!=entity.password"
+                            ng-click="addUser()">
+                        保存
+                    </button>
+                    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editModal3" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="myModalLabel2">用户基本信息修改</h3>
+            </div>
+            <form name="updateUserInfo" novalidate>
+                <div class="modal-body">
+
+                    <!--<p>用户名:<br>
+                        <input type="text" name="user" ng-model="user" required>
+                        <span style="color:red" ng-show="myForm.user.$dirty && myForm.user.$invalid">
+  <span ng-show="myForm.user.$error.required">用户名是必须的。</span>
+  </span>
+                    </p>
+
+                    <p>邮箱:<br>
+                        <input type="email" name="email" ng-model="email" required>
+                        <span style="color:red" ng-show="myForm.email.$dirty && myForm.email.$invalid">
+  <span ng-show="myForm.email.$error.required">邮箱是必须的。</span>
+  <span ng-show="myForm.email.$error.email">非法的邮箱。</span>
+  </span>
+                    </p>
+
+                    <p>
+                        <input type="submit"
+                               ng-disabled="myForm.user.$dirty && myForm.user.$invalid ||
+  myForm.email.$dirty && myForm.email.$invalid">
+                    </p>-->
+                    <table class="table table-bordered table-striped" width="800px">
+                        {{entity}}
+                        {{roleList}}
+                        <tr>
+                            <td>用户名称</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入用户名称" ng-model="entity.userName"
+                                       ng-readonly="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>姓名</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入用户姓名" ng-model="entity.name"
+                                       ng-readonly="true">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>部门</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入部门名称"
+                                       ng-model="entity.department">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>所属群组</td>
+                            <td>
+                                <input type="text" class="form-control" placeholder="请输入群组名称"
+                                       ng-model="entity.group">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>选择角色</td>
+                            <td>
+                                <!--ng-readonly="条件", 是否可编辑-->
+                                <input select2 select2-model="entity.roleList" config="roleList"
+                                       class="form-control" placeholder="请选择角色" type="text"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button id="updateUser" class="btn btn-success" data-dismiss="modal" aria-hidden="true"
+                            ng-click="update(entity)">
+                        修改
+                    </button>
+                    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

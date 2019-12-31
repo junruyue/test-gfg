@@ -1,0 +1,19 @@
+#tomcat config
+server:
+  port: 8082
+
+
+spring:
+  #jdbc config
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/testgfg?serverTimezone=UTC&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: 123456
+  #jpa config
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    database: mysql
